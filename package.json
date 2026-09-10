@@ -1,0 +1,24 @@
+{
+  "name": "ios7-music-server",
+  "version": "1.0.0",
+  "description": "Zero-dependency home network music server and web player for iPhone 4 / iOS 7",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/test_server.js"
+  },
+  "keywords": [
+    "iphone4",
+    "ios7",
+    "retro-apple",
+    "music-server",
+    "html5-audio",
+    "streaming"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PedroGruvhagen/ios7-music-server"
+  },
+  "author": "Pedro Gruvhagen (https://github.com/PedroGruvhagen)",
+  "license": "SEE LICENSE IN LICENSE"
+}
