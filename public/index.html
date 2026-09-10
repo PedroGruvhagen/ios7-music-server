@@ -104,6 +104,26 @@
         </div>
       </section>
 
+      <!-- View: Live (AirPlay relay, e.g. Spotify cast from another device) -->
+      <section id="view-live" class="view-panel">
+        <div class="settings-group">
+          <div class="section-title">CAST FROM ANOTHER DEVICE</div>
+          <div class="settings-card">
+            <div class="setting-row">
+              <span class="setting-label">Status</span>
+              <span id="live-status" class="setting-value">Checking...</span>
+            </div>
+          </div>
+          <div class="settings-action-box">
+            <button id="btn-live-toggle" class="primary-btn">Listen</button>
+            <div id="live-hint" class="status-indicator">
+              On your other phone, AirPlay audio (e.g. from Spotify) to
+              &ldquo;iPhone 4 Music&rdquo;, then tap Listen here.
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- View: Settings -->
       <section id="view-settings" class="view-panel">
         <div class="settings-group">
@@ -272,6 +292,10 @@
       <button class="tab-item active" data-view="songs">
         <svg class="tab-icon" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
         <span class="tab-label">Songs</span>
+      </button>
+      <button class="tab-item" data-view="live">
+        <svg class="tab-icon" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9 0 3.72 2.26 6.91 5.48 8.27l.66-1.85C6.55 17.16 5 14.76 5 12c0-3.87 3.13-7 7-7s7 3.13 7 7c0 2.76-1.55 5.16-3.14 6.42l.66 1.85C19.74 18.91 22 15.72 22 12c0-4.97-4.03-9-10-9zm0 4c-2.76 0-5 2.24-5 5 0 1.85 1.01 3.46 2.5 4.33l.66-1.85C9.44 13.98 9 13.04 9 12c0-1.66 1.34-3 3-3s3 1.34 3 3c0 1.04-.44 1.98-1.16 2.48l.66 1.85C15.99 15.46 17 13.85 17 12c0-2.76-2.24-5-5-5zm0 4c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/></svg>
+        <span class="tab-label">Live</span>
       </button>
       <button class="tab-item" data-view="settings">
         <svg class="tab-icon" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>

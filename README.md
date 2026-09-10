@@ -34,11 +34,14 @@ actually exists on the device.
   separate media process that doesn't carry the page's own cookie jar
 - Songs / Artists / Albums / Search views, a queue, shuffle/repeat, and a persistent mini-player
 - Album art extraction and caching
+- A "Live" tab that relays audio AirPlayed in from another device (see below) — useful for
+  streaming services with no iOS 7-compatible client, like Spotify
 
 ## Requirements
 
 - Node.js (any reasonably current LTS)
-- `ffmpeg` on your `PATH` if your library has FLAC/OGG files you want transcoded on the fly
+- `ffmpeg` on your `PATH` if your library has FLAC/OGG files you want transcoded on the fly, or if
+  you want the Live/AirPlay relay feature
 - A music folder of MP3/FLAC/OGG/AIFF/WAV files, tagged well enough for the metadata reader to
   pick up artist/album/title
 
@@ -86,6 +89,43 @@ it from the app switcher first, then relaunch.
 Auth (`MUSIC_AUTH_USER` / `MUSIC_AUTH_PASS`) is environment-only, on purpose: the server refuses to
 start without both set, so there's no shipped default credential to forget about.
 
+`airplayPipe` is only used by the Live/AirPlay relay feature below; you can ignore it otherwise.
+
+## Live: casting audio in from another device (e.g. Spotify)
+
+There's no way to run a modern streaming app's client on iOS 7 itself (App Stores have long since
+dropped support, and things like Spotify's Web Playback SDK require DRM support iOS 7's WebKit
+doesn't have). The **Live** tab works around that legally, the same way any AirPlay speaker does:
+a real, licensed app on another device (your current phone, a Mac, whatever) does the actual
+decoding and playback, AirPlays the resulting plain decoded audio to this server, and this app
+just relays that live audio onward to the iOS 7 device's own `<audio>` player.
+
+Setup, once per server:
+
+1. Install [Shairport Sync](https://github.com/mikebrady/shairport-sync) (an open-source AirPlay
+   *receiver* — the same category of software real AirPlay speakers run), e.g. `apt install
+   shairport-sync` on Debian/Ubuntu.
+2. Configure it to write raw PCM to a named pipe instead of trying to drive real audio hardware.
+   In `/etc/shairport-sync.conf`:
+   ```
+   general = { name = "My Music Server"; output_backend = "pipe"; ignore_volume_control = "yes"; };
+   pipe = { name = "/tmp/shairport-sync-audio"; };
+   ```
+   `ignore_volume_control` matters: without it, playback volume is capped by whatever the AirPlay
+   *sender's* own volume slider happens to be set to, which is usually much quieter than you'd
+   expect. With it set, this server always receives full-level audio and playback volume is
+   controlled purely on the receiving device.
+3. If your server has a firewall, open AirPlay's ports to your LAN: `5000/tcp` (RTSP), `6001-6010/udp`
+   (timing/control/data), and `5353/udp` (mDNS/Bonjour, for discovery).
+4. Point `airplayPipe` in `config.json` at the same path as `pipe.name` above (defaults to
+   `/tmp/shairport-sync-audio`, matching the example).
+5. Start/restart `shairport-sync`, then restart this server. It spawns its own `ffmpeg` process to
+   re-encode the pipe's raw PCM into a live MP3 stream, served at `GET /api/live/spotify` to any
+   number of simultaneous listeners.
+
+Then: AirPlay from your other device to this server (it'll show up under the `name` you set),
+open the Live tab on the iOS 7 device, tap Listen.
+
 ## REST API
 
 | Endpoint | Notes |
@@ -99,6 +139,8 @@ start without both set, so there's no shipped default credential to forget about
 | `GET /api/artwork/:id` | Album art, cached JPEG |
 | `POST /api/rescan` | Re-scan the music folder |
 | `GET /api/session-token` | Session token for `?st=` media URLs |
+| `GET /api/live/spotify` | Live AirPlay relay stream (see above) |
+| `GET /api/live/status` | `{ active, listeners }` for the live relay |
 
 ## Testing
 

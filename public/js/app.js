@@ -134,6 +134,7 @@
     albums: document.getElementById('view-albums'),
     albumDetail: document.getElementById('view-album-detail'),
     search: document.getElementById('view-search'),
+    live: document.getElementById('view-live'),
     settings: document.getElementById('view-settings')
   };
 
@@ -226,6 +227,9 @@
       navTitle.textContent = 'Settings';
     } else if (viewName === 'search') {
       navTitle.textContent = 'Search';
+    } else if (viewName === 'live') {
+      navTitle.textContent = 'Live';
+      refreshLiveStatus();
     }
 
     // Update bottom tab bar active state
@@ -293,6 +297,67 @@
     try {
       localStorage.setItem('iphone4_last_song', JSON.stringify(song));
     } catch (e) {}
+  }
+
+  // --- Live cast playback (AirPlay relay, see lib/livecast.js server-side) ---
+  // Not part of the normal song queue: it's an unbounded live stream, so
+  // next/prev/shuffle/repeat simply don't apply while it's playing (their
+  // guards on state.queue.length === 0 already make them no-ops).
+  var LIVE_SONG = {
+    id: 'live-spotify',
+    title: 'Live from your phone',
+    artist: 'AirPlay',
+    album: '',
+    duration: 0,
+    hasArtwork: false,
+    isLive: true
+  };
+
+  function playLiveSpotify() {
+    state.queue = [];
+    state.originalQueue = [];
+    state.currentSong = LIVE_SONG;
+    audio.src = mediaUrl('/api/live/spotify');
+    audio.load();
+    var playPromise = audio.play();
+    if (playPromise !== undefined && typeof playPromise.catch === 'function') {
+      playPromise.catch(function(err) {
+        console.log('Live audio autoplay prevented or error:', err);
+      });
+    }
+    updateMiniPlayerUI(LIVE_SONG);
+    updateNowPlayingUI(LIVE_SONG);
+  }
+
+  function stopLiveSpotify() {
+    audio.pause();
+    audio.removeAttribute('src');
+    audio.load();
+    state.currentSong = null;
+    updateMiniPlayerUI(null);
+  }
+
+  function refreshLiveStatus() {
+    var statusEl = document.getElementById('live-status');
+    var toggleBtn = document.getElementById('btn-live-toggle');
+    if (!statusEl || !toggleBtn) return;
+    ajax('GET', '/api/live/status', null, function(err, data) {
+      var isLivePlaying = !!(state.currentSong && state.currentSong.isLive) && !audio.paused;
+      if (isLivePlaying) {
+        toggleBtn.textContent = 'Stop';
+      } else {
+        toggleBtn.textContent = 'Listen';
+      }
+      if (err || !data) {
+        statusEl.textContent = 'Unknown';
+        return;
+      }
+      if (data.active) {
+        statusEl.textContent = 'Receiving audio' + (data.listeners > 0 ? ' (' + data.listeners + ' listening)' : '');
+      } else {
+        statusEl.textContent = 'Nothing playing';
+      }
+    });
   }
 
   function playNext() {
@@ -989,6 +1054,27 @@
         }
       });
     });
+
+    // Live Cast Listen/Stop Button
+    var btnLiveToggle = document.getElementById('btn-live-toggle');
+    btnLiveToggle.addEventListener('click', function() {
+      var isLivePlaying = !!(state.currentSong && state.currentSong.isLive) && !audio.paused;
+      if (isLivePlaying) {
+        stopLiveSpotify();
+      } else {
+        playLiveSpotify();
+      }
+      refreshLiveStatus();
+    });
+
+    // Poll live status every 5s while the Live tab is the active view, so
+    // "Nothing playing" flips to "Receiving audio" without needing a manual
+    // refresh once the other phone starts AirPlaying.
+    setInterval(function() {
+      if (state.currentView === 'live') {
+        refreshLiveStatus();
+      }
+    }, 5000);
   }
 
   // --- Initialize App ---

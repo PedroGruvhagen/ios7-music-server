@@ -10,6 +10,7 @@ const scanner = require('./lib/scanner');
 const { streamAudio } = require('./lib/streamer');
 const { extractArtwork } = require('./lib/metadata');
 const { printBanner } = require('./lib/qrcode');
+const livecast = require('./lib/livecast');
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
@@ -190,6 +191,34 @@ async function handleApi(req, res, parsedUrl) {
       return res.end('Track not found');
     }
     return streamAudio(req, res, song.path);
+  }
+
+  // GET /api/live/spotify -- live AirPlay relay (see lib/livecast.js). Any
+  // number of clients can be subscribed at once; each gets the same live
+  // MP3 encode from whatever is currently being AirPlayed to this machine.
+  if (pathname === '/api/live/spotify' && method === 'GET') {
+    res.writeHead(200, {
+      'Content-Type': 'audio/mpeg',
+      'Cache-Control': 'no-cache, no-store',
+      'Connection': 'keep-alive'
+    });
+    // Headers otherwise sit buffered until the first write() -- this is a
+    // live/idle-tolerant stream that may go a while before any audio data
+    // exists, so the client (including the iOS 7 <audio> element, which
+    // needs to see a response promptly to not appear stalled) must get its
+    // headers immediately, not whenever the source starts producing bytes.
+    res.flushHeaders();
+    livecast.subscribe(res);
+    req.on('close', function () {
+      res.end();
+    });
+    return;
+  }
+
+  // GET /api/live/status -- whether anyone is currently AirPlaying, so the
+  // UI can show "Nothing playing" instead of silently doing nothing.
+  if (pathname === '/api/live/status' && method === 'GET') {
+    return sendJson(res, 200, livecast.getStatus());
   }
 
   // GET /api/artwork/:id
@@ -490,7 +519,7 @@ const server = http.createServer(async (req, res) => {
       // Diagnostic: if a media/API path falls through to the login page, that
       // IS the bug (client thinks it's authenticated, server disagrees) --
       // log it loudly instead of silently returning HTML the client can't play.
-      const isMediaRequest = earlyUrl.pathname.startsWith('/api/stream/') || earlyUrl.pathname.startsWith('/api/artwork/');
+      const isMediaRequest = earlyUrl.pathname.startsWith('/api/stream/') || earlyUrl.pathname.startsWith('/api/artwork/') || earlyUrl.pathname.startsWith('/api/live/');
       if (isMediaRequest) {
         console.error('AUTH REJECTED for media request:', earlyUrl.pathname + earlyUrl.search,
           '| cookie present:', !!getSessionCookieValue(req),
@@ -569,6 +598,8 @@ async function start() {
     const ips = getLocalIpAddresses();
     printBanner(`http://${ips[0] || 'localhost'}:${port}`, ips, port);
   });
+
+  livecast.init(config.airplayPipe);
 }
 
 if (require.main === module) {
