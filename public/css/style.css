@@ -141,6 +141,14 @@ button, input {
 }
 
 .icon-svg {
+  /* Real iOS 7 WebKit's older flexbox engine mis-centers inline replaced
+   * elements (SVG/IMG) inside a `display: flex`/`-webkit-box` parent even
+   * when justify-content/align-items are correctly set to center -- the
+   * icon renders visibly off-center (most noticeable on the large
+   * play-pause button). Forcing block display removes the inline-level
+   * baseline/whitespace handling that triggers the bug; harmless on modern
+   * engines, which center flex/inline-flex items correctly either way. */
+  display: block;
   width: 22px;
   height: 22px;
   fill: #ff2d55;
