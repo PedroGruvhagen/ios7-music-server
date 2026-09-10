@@ -317,7 +317,16 @@
     state.queue = [];
     state.originalQueue = [];
     state.currentSong = LIVE_SONG;
-    audio.src = mediaUrl('/api/live/spotify');
+    // Cache-bust with a per-tap random value: the session token in
+    // mediaUrl()'s querystring never changes between taps, so without this
+    // the <audio> element's src is byte-identical to whatever it already
+    // was, and some WebKit builds treat re-assigning an identical src as a
+    // no-op that just resumes existing (possibly stalled/dead) element
+    // state instead of opening a genuinely fresh connection -- silent, no
+    // sound, no new request to the server, exactly the failure seen here.
+    var url = mediaUrl('/api/live/spotify');
+    url += (url.indexOf('?') === -1 ? '?' : '&') + '_=' + Math.floor(Math.random() * 1e9);
+    audio.src = url;
     audio.load();
     var playPromise = audio.play();
     if (playPromise !== undefined && typeof playPromise.catch === 'function') {
